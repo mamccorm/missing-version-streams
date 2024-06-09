@@ -88,44 +88,34 @@ def main(package_repo, version_streams_repo, endoflife_repo):
 
     Args:
         package_repo (str): Path to the package repository.
-        version_streams_repo (str): Path to the version streams 
-                                    repository.
+        version_streams_repo (str): Path to the version streams repository.
         endoflife_repo (str): Path to the end-of-life repository.
     """
-    package_files_with_numbers = find_top_level_files_with_numbers(
-        package_repo)
-    package_files_without_numbers = find_top_level_files_without_numbers(
-        package_repo)
-    version_stream_files = find_version_stream_files(
-        version_streams_repo)
+    package_files_with_numbers = find_top_level_files_with_numbers(package_repo)
+    package_files_without_numbers = find_top_level_files_without_numbers(package_repo)
+    version_stream_files = find_version_stream_files(version_streams_repo)
     endoflife_files = find_endoflife_files(endoflife_repo)
 
-    matched_files = [
-        file for file in package_files_with_numbers
-        if file.split('-')[0] in version_stream_files
-    ]
+    # Check if the base name from version streams repo is present in the package names
     unmatched_files = [
         file for file in package_files_with_numbers
-        if file.split('-')[0] not in version_stream_files
-    ]
-    endoflife_matches_unmatched = [
-        file for file in unmatched_files
-        if file.split('-')[0] in endoflife_files
-    ]
-    endoflife_matches_no_version = [
-        file for file in package_files_without_numbers
-        if file.split('.')[0] in endoflife_files
+        if not any(vs_file == file.rsplit('-', 1)[0] for vs_file in version_stream_files)
     ]
 
-    total_packages_with_numbers = len(package_files_with_numbers)
-    total_packages_without_numbers = len(package_files_without_numbers)
-    total_with_streams = len(matched_files)
+    # Check for end-of-life matches in unmatched files
+    endoflife_matches_unmatched = [
+        file for file in unmatched_files
+        if any(eol_file == file.rsplit('-', 1)[0] for eol_file in endoflife_files)
+    ]
+
+    # Check for end-of-life matches in files without numbers
+    endoflife_matches_no_version = [
+        file for file in package_files_without_numbers
+        if any(eol_file == file.rsplit('.', 1)[0] for eol_file in endoflife_files)
+    ]
+
     total_without_streams = len(unmatched_files)
-    total_endoflife_matches_unmatched = len(endoflife_matches_unmatched)
-    total_endoflife_matches_no_version = len(endoflife_matches_no_version)
-    total_endoflife_matches = (
-        total_endoflife_matches_unmatched + total_endoflife_matches_no_version
-    )
+    total_endoflife_matches = len(endoflife_matches_unmatched) + len(endoflife_matches_no_version)
 
     print("\nSummary:")
     print(f"  Wolfi packages with version numbers in their name, but "
@@ -134,12 +124,9 @@ def main(package_repo, version_streams_repo, endoflife_repo):
           f"version stream: {total_endoflife_matches}")
     print("\nSee the individual files for details:")
 
-    files_written = []
-
     with open('wolfi-versioned-but-missing-version-stream.txt', 'w') as f:
         for file in unmatched_files:
             f.write(f"{file}\n")
-        files_written.append('wolfi-versioned-but-missing-version-stream.txt')
 
     with open('endoflife-versioned-but-missing-in-wolfi.txt', 'w') as f:
         all_endoflife_matches = sorted(
@@ -147,14 +134,13 @@ def main(package_repo, version_streams_repo, endoflife_repo):
         )
         filtered_endoflife_matches = [
             file for file in all_endoflife_matches
-            if file.split('-')[0] not in version_stream_files
+            if not any(vs_file == file.rsplit('-', 1)[0] for vs_file in version_stream_files)
         ]
         for file in filtered_endoflife_matches:
             f.write(f"{file}\n")
-        files_written.append('endoflife-versioned-but-missing-in-wolfi.txt')
 
-    for file in files_written:
-        print(f"  - {file}")
+    print("  - wolfi-versioned-but-missing-version-stream.txt")
+    print("  - endoflife-versioned-but-missing-in-wolfi.txt")
 
 
 if __name__ == "__main__":
