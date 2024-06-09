@@ -99,19 +99,19 @@ def main(package_repo, version_streams_repo, endoflife_repo):
     # Check if the base name from version streams repo is present in the package names
     unmatched_files = [
         file for file in package_files_with_numbers
-        if not any(vs_file == file.rsplit('-', 1)[0] for vs_file in version_stream_files)
+        if not any(vs_file == file.split('-')[0] for vs_file in version_stream_files)
     ]
 
     # Check for end-of-life matches in unmatched files
     endoflife_matches_unmatched = [
         file for file in unmatched_files
-        if any(eol_file == file.rsplit('-', 1)[0] for eol_file in endoflife_files)
+        if any(eol_file == file.split('-')[0] for eol_file in endoflife_files)
     ]
 
     # Check for end-of-life matches in files without numbers
     endoflife_matches_no_version = [
         file for file in package_files_without_numbers
-        if any(eol_file == file.rsplit('.', 1)[0] for eol_file in endoflife_files)
+        if any(eol_file == file.split('.')[0] for eol_file in endoflife_files)
     ]
 
     total_without_streams = len(unmatched_files)
@@ -134,7 +134,7 @@ def main(package_repo, version_streams_repo, endoflife_repo):
         )
         filtered_endoflife_matches = [
             file for file in all_endoflife_matches
-            if not any(vs_file == file.rsplit('-', 1)[0] for vs_file in version_stream_files)
+            if not any(vs_file == file.split('.')[0] for vs_file in version_stream_files)
         ]
         for file in filtered_endoflife_matches:
             f.write(f"{file}\n")
